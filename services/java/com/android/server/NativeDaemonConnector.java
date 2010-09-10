@@ -187,6 +187,12 @@ final class NativeDaemonConnector implements Runnable {
     private void sendCommand(String command, String argument) {
         synchronized (this) {
             if (LOCAL_LOGD) Slog.d(TAG, String.format("SND -> {%s} {%s}", command, argument));
+           try{
+               Thread.sleep(100);
+           }
+           catch (InterruptedException e){
+               e.printStackTrace();
+           }
             if (mOutputStream == null) {
                 Slog.e(TAG, "No connection to daemon", new IllegalStateException());
             } else {
