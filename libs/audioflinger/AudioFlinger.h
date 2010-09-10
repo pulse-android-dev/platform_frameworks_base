@@ -117,6 +117,18 @@ public:
                                     uint32_t *pLatencyMs,
                                     uint32_t flags);
 
+    virtual int openSession(   uint32_t *pDevices,
+                                    uint32_t *pFormat,
+                                    uint32_t flags,
+                                    int32_t  streamType,
+                                    int32_t  sessionId);
+
+    virtual status_t pauseSession(int output, int32_t  streamType);
+
+    virtual status_t resumeSession(int output, int32_t  streamType);
+
+    virtual status_t closeSession(int output);
+
     virtual int openDuplicateOutput(int output1, int output2);
 
     virtual status_t closeOutput(int output);
@@ -138,6 +150,9 @@ public:
     virtual status_t setVoiceVolume(float volume);
 
     virtual status_t getRenderPosition(uint32_t *halFrames, uint32_t *dspFrames, int output);
+ 
+    virtual status_t deregisterClient(const sp<IAudioFlingerClient>& client);
+    virtual status_t setFmVolume(float volume);
 
     // IBinder::DeathRecipient
     virtual     void        binderDied(const wp<IBinder>& who);
@@ -159,6 +174,7 @@ public:
         AUDIO_HW_SET_MIC_MUTE,
         AUDIO_SET_VOICE_VOLUME,
         AUDIO_SET_PARAMETER,
+        AUDIO_SET_FM_VOLUME
     };
 
     // record interface
@@ -793,11 +809,18 @@ private:
                 PlaybackThread::stream_type_t       mStreamTypes[AudioSystem::NUM_STREAM_TYPES];
                 float                               mMasterVolume;
                 bool                                mMasterMute;
+                bool                                mFmOn;
 
                 DefaultKeyedVector< int, sp<RecordThread> >    mRecordThreads;
 
                 SortedVector< sp<IBinder> >         mNotificationClients;
                 int                                 mNextThreadId;
+                int                                 mA2DPHandle; // Handle to notify client (MIO)
+                int                                 mLPAStreamType;
+                AudioStreamOut                     *mLPAOutput;
+                audio_io_handle_t                   mLPAHandle;
+                //KeyedVector<audio_io_handle_t, AudioStreamOut *> mOutputSessions;   // list of output descriptors
+                int                                 mLPAStreamIsActive;
 };
 
 // ----------------------------------------------------------------------------

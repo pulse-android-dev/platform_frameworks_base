@@ -2,6 +2,7 @@
 **
 ** Copyright (C) 2008, The Android Open Source Project
 ** Copyright (C) 2008 HTC Inc.
+** Copyright (C) 2010, Code Aurora Forum. All rights reserved.
 **
 ** Licensed under the Apache License, Version 2.0 (the "License");
 ** you may not use this file except in compliance with the License.
@@ -35,6 +36,7 @@
 #include <media/AudioSystem.h>
 #include "CameraService.h"
 
+#include <cutils/properties.h>
 #include <cutils/atomic.h>
 
 namespace android {
@@ -114,7 +116,7 @@ sp<ICamera> CameraService::connect(const sp<ICameraClient>& cameraClient)
                 return currentClient;
             } else {
                 // It's another client... reject it
-                LOGV("CameraService::connect X (pid %d, new client %p) rejected. "
+                LOGE("CameraService::connect X (pid %d, new client %p) rejected. "
                     "(old pid %d, old client %p)",
                     callingPid, cameraClient->asBinder().get(),
                     currentClient->mClientPid, currentCameraClient->asBinder().get());
@@ -125,7 +127,7 @@ sp<ICamera> CameraService::connect(const sp<ICameraClient>& cameraClient)
             }
         } else {
             // can't promote, the previous client has died...
-            LOGV("New client (pid %d) connecting, old reference was dangling...",
+            LOGE("New client (pid %d) connecting, old reference was dangling...",
                     callingPid);
             mClient.clear();
         }
@@ -139,6 +141,11 @@ sp<ICamera> CameraService::connect(const sp<ICameraClient>& cameraClient)
     // create a new Client object
     client = new Client(this, cameraClient, callingPid);
     mClient = client;
+    if (client->mHardware == NULL) {
+        client = NULL;
+        mClient = NULL;
+        return client;
+    }
 #if DEBUG_CLIENT_REFERENCES
     // Enable tracking for this object, and track increments and decrements of
     // the refcount.
@@ -215,33 +222,40 @@ CameraService::Client::Client(const sp<CameraService>& cameraService,
         const sp<ICameraClient>& cameraClient, pid_t clientPid)
 {
     int callingPid = getCallingPid();
+    char value[PROPERTY_VALUE_MAX];
     LOGV("Client::Client E (pid %d)", callingPid);
     mCameraService = cameraService;
     mCameraClient = cameraClient;
     mClientPid = clientPid;
     mHardware = openCameraHardware();
-    mUseOverlay = mHardware->useOverlay();
 
-    mHardware->setCallbacks(notifyCallback,
-                            dataCallback,
-                            dataCallbackTimestamp,
-                            mCameraService.get());
+    if (mHardware != NULL) {
+       mUseOverlay = mHardware->useOverlay();
 
-    // Enable zoom, error, and focus messages by default
-    mHardware->enableMsgType(CAMERA_MSG_ERROR |
-                             CAMERA_MSG_ZOOM |
-                             CAMERA_MSG_FOCUS);
+       mHardware->setCallbacks(notifyCallback,
+                               dataCallback,
+                               dataCallbackTimestamp,
+                               mCameraService.get());
 
-    mMediaPlayerClick = newMediaPlayer("/system/media/audio/ui/camera_click.ogg");
-    mMediaPlayerBeep = newMediaPlayer("/system/media/audio/ui/VideoRecord.ogg");
-    mOverlayW = 0;
-    mOverlayH = 0;
+       // Enable zoom, error, and focus messages by default
+       mHardware->enableMsgType(CAMERA_MSG_ERROR |
+                                CAMERA_MSG_ZOOM |
+                                CAMERA_MSG_FOCUS);
+       property_get("persist.camera.shutter.disable", value, "0");
+       int disableShutterSound = atoi(value);
+       if(disableShutterSound != 1)
+           mMediaPlayerClick = newMediaPlayer("/system/media/audio/ui/camera_click.ogg");
+       mMediaPlayerBeep = newMediaPlayer("/system/media/audio/ui/VideoRecord.ogg");
 
-    // Callback is disabled by default
-    mPreviewCallbackFlag = FRAME_CALLBACK_FLAG_NOOP;
-    mOrientation = 0;
-    cameraService->incUsers();
-    LOGV("Client::Client X (pid %d)", callingPid);
+       mOverlayW = 0;
+       mOverlayH = 0;
+
+      // Callback is disabled by default
+      mPreviewCallbackFlag = FRAME_CALLBACK_FLAG_NOOP;
+      mOrientation = 0;
+      cameraService->incUsers();
+    }
+    LOGD("Client::Client X (pid %d)", callingPid);
 }
 
 status_t CameraService::Client::checkPid()
@@ -418,6 +432,9 @@ void CameraService::Client::disconnect()
     // Release the held overlay resources.
     if (mUseOverlay)
     {
+        /* Release previous overlay handle */
+        if( mOverlay != NULL)
+            mOverlay->destroy();
         mOverlayRef = 0;
     }
     mHardware.clear();
@@ -458,9 +475,10 @@ status_t CameraService::Client::setPreviewDisplay(const sp<ISurface>& surface)
         mOverlayRef = 0;
         // If preview has been already started, set overlay or register preview
         // buffers now.
-        if (mHardware->previewEnabled()) {
+        if (mHardware->previewEnabled() || mUseOverlay) {
             if (mUseOverlay) {
-                result = setOverlay();
+                if( mSurface != NULL)
+                    result = setOverlay();
             } else if (mSurface != 0) {
                 result = registerPreviewBuffers();
             }
@@ -541,6 +559,8 @@ status_t CameraService::Client::startRecordingMode()
         return NO_ERROR;
     }
 
+    mHardware->enableMsgType(CAMERA_MSG_VIDEO_FRAME);
+
     // start recording mode
     ret = mHardware->startRecording();
     if (ret != NO_ERROR) {
@@ -562,6 +582,8 @@ status_t CameraService::Client::setOverlay()
         sp<Overlay> dummy;
         mHardware->setOverlay( dummy );
         mOverlayRef = 0;
+        if(mOverlay != NULL)
+            mOverlay->destroy();
     }
 
     status_t ret = NO_ERROR;
@@ -575,7 +597,7 @@ status_t CameraService::Client::setOverlay()
             // wait in the createOverlay call if the previous overlay is in the 
             // process of being destroyed.
             for (int retry = 0; retry < 50; ++retry) {
-                mOverlayRef = mSurface->createOverlay(w, h, OVERLAY_FORMAT_DEFAULT,
+                mOverlayRef = mSurface->createOverlay(w, h, OVERLAY_FORMAT_YCbCr_420_SP,
                                                       mOrientation);
                 if (mOverlayRef != NULL) break;
                 LOGW("Overlay create failed - retrying");
@@ -586,7 +608,8 @@ status_t CameraService::Client::setOverlay()
                 LOGE("Overlay Creation Failed!");
                 return -EINVAL;
             }
-            ret = mHardware->setOverlay(new Overlay(mOverlayRef));
+            mOverlay = new Overlay(mOverlayRef);
+            ret = mHardware->setOverlay(mOverlay);
         }
     } else {
         ret = mHardware->setOverlay(NULL);
@@ -657,6 +680,17 @@ status_t CameraService::Client::startPreviewMode()
     return ret;
 }
 
+status_t CameraService::Client::getBufferInfo(sp<IMemory>& Frame, size_t *alignedSize)
+{
+    LOGD(" getBufferInfo : E");
+    if (mHardware == NULL) {
+        LOGE("mHardware is NULL, returning.");
+        Frame = NULL;
+	return INVALID_OPERATION;
+    }
+    return mHardware->getBufferInfo(Frame, alignedSize);
+}
+
 status_t CameraService::Client::startPreview()
 {
     LOGV("startPreview (pid %d)", getCallingPid());
@@ -678,9 +712,6 @@ status_t CameraService::Client::startRecording()
             mMediaPlayerBeep->start();
         }
     }
-
-    mHardware->enableMsgType(CAMERA_MSG_VIDEO_FRAME);
-
     return startCameraMode(CAMERA_RECORDING_MODE);
 }
 
@@ -730,14 +761,15 @@ void CameraService::Client::stopRecording()
             return;
         }
 
+        mHardware->disableMsgType(CAMERA_MSG_VIDEO_FRAME);
+        mHardware->stopRecording();
+        LOGV("stopRecording(), hardware stopped OK");
+
         if (mMediaPlayerBeep.get() != NULL) {
             mMediaPlayerBeep->seekTo(0);
             mMediaPlayerBeep->start();
         }
 
-        mHardware->stopRecording();
-        mHardware->disableMsgType(CAMERA_MSG_VIDEO_FRAME);
-        LOGV("stopRecording(), hardware stopped OK");
     }
 
     // hold preview buffer lock
@@ -887,32 +919,39 @@ status_t CameraService::Client::takePicture()
 
 // snapshot taken
 void CameraService::Client::handleShutter(
-    image_rect_type *size // The width and height of yuv picture for
+    image_rect_type *size, // The width and height of yuv picture for
                           // registerBuffer. If this is NULL, use the picture
                           // size from parameters.
+   bool playShutterSoundOnly
 )
 {
     // Play shutter sound.
-    if (mMediaPlayerClick.get() != NULL) {
-        // do not play shutter sound if stream volume is 0
-        // (typically because ringer mode is silent).
-        int index;
-        AudioSystem::getStreamVolumeIndex(AudioSystem::ENFORCED_AUDIBLE, &index);
-        if (index != 0) {
-            mMediaPlayerClick->seekTo(0);
-            mMediaPlayerClick->start();
+
+    if(playShutterSoundOnly) {
+
+        if (mMediaPlayerClick.get() != NULL) {
+            // do not play shutter sound if stream volume is 0
+            // (typically because ringer mode is silent).
+            int index;
+            AudioSystem::getStreamVolumeIndex(AudioSystem::ENFORCED_AUDIBLE, &index);
+            if (index != 0) {
+                mMediaPlayerClick->seekTo(0);
+                mMediaPlayerClick->start();
+            }
         }
+        sp<ICameraClient> c = mCameraClient;
+        if (c != NULL) {
+            c->notifyCallback(CAMERA_MSG_SHUTTER, 0, 0);
+        }
+        return ;
     }
+
 
     // Screen goes black after the buffer is unregistered.
     if (mSurface != 0 && !mUseOverlay) {
         mSurface->unregisterBuffers();
     }
 
-    sp<ICameraClient> c = mCameraClient;
-    if (c != NULL) {
-        c->notifyCallback(CAMERA_MSG_SHUTTER, 0, 0);
-    }
     mHardware->disableMsgType(CAMERA_MSG_SHUTTER);
 
     // It takes some time before yuvPicture callback to be called.
@@ -929,6 +968,7 @@ void CameraService::Client::handleShutter(
             h &= ~1;
             LOGV("Snapshot image width=%d, height=%d", w, h);
         }
+
         // FIXME: don't use hardcoded format constants here
         ISurface::BufferHeap buffers(w, h, w, h,
             HAL_PIXEL_FORMAT_YCrCb_420_SP, mOrientation, 0,
@@ -1085,7 +1125,7 @@ void CameraService::Client::notifyCallback(int32_t msgType, int32_t ext1, int32_
     switch (msgType) {
         case CAMERA_MSG_SHUTTER:
             // ext1 is the dimension of the yuv picture.
-            client->handleShutter((image_rect_type *)ext1);
+            client->handleShutter((image_rect_type *)ext1, (bool)ext2);
             break;
         default:
             sp<ICameraClient> c = client->mCameraClient;

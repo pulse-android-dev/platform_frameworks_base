@@ -32,6 +32,7 @@ ifeq ($(strip $(BOARD_USES_GENERIC_AUDIO)),true)
   LOCAL_CFLAGS += -DGENERIC_AUDIO
 endif
 
+
 LOCAL_MODULE:= libaudiointerface
 
 ifeq ($(BOARD_HAVE_BLUETOOTH),true)
@@ -46,6 +47,9 @@ include $(BUILD_STATIC_LIBRARY)
 
 include $(CLEAR_VARS)
 
+ifeq ($(strip $(BOARD_NO_SPEAKER)),true)
+  LOCAL_CFLAGS += -DHW_NO_SPEAKER
+endif
 LOCAL_SRC_FILES:=               \
     AudioPolicyManagerBase.cpp
 
@@ -58,6 +62,10 @@ ifeq ($(TARGET_SIMULATOR),true)
  LOCAL_LDLIBS += -ldl
 else
  LOCAL_SHARED_LIBRARIES += libdl
+endif
+
+ifeq ($(strip $(BOARD_USES_DEFAULT_HEADSET)),true)
+  LOCAL_CFLAGS += -DHW_USES_DEFAULT_HEADSET
 endif
 
 LOCAL_MODULE:= libaudiopolicybase

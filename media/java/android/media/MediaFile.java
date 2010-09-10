@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2007 The Android Open Source Project
+ * Copyright (c) 2009, Code Aurora Forum. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,9 +46,11 @@ public class MediaFile {
     public static final int FILE_TYPE_AWB     = 5;
     public static final int FILE_TYPE_WMA     = 6;
     public static final int FILE_TYPE_OGG     = 7;
-    public static final int FILE_TYPE_AAC     = 8;
+    public static final int FILE_TYPE_QCP     = 8;
+    public static final int FILE_TYPE_AAC     = 9;
+    public static final int FILE_TYPE_3GPA    = 10;
     private static final int FIRST_AUDIO_FILE_TYPE = FILE_TYPE_MP3;
-    private static final int LAST_AUDIO_FILE_TYPE = FILE_TYPE_AAC;
+    private static final int LAST_AUDIO_FILE_TYPE = FILE_TYPE_3GPA;
 
     // MIDI file types
     public static final int FILE_TYPE_MID     = 11;
@@ -72,8 +75,9 @@ public class MediaFile {
     public static final int FILE_TYPE_PNG     = 33;
     public static final int FILE_TYPE_BMP     = 34;
     public static final int FILE_TYPE_WBMP    = 35;
+    public static final int FILE_TYPE_RAW    = 36;
     private static final int FIRST_IMAGE_FILE_TYPE = FILE_TYPE_JPEG;
-    private static final int LAST_IMAGE_FILE_TYPE = FILE_TYPE_WBMP;
+    private static final int LAST_IMAGE_FILE_TYPE = FILE_TYPE_RAW;
    
     // Playlist file types
     public static final int FILE_TYPE_M3U     = 41;
@@ -131,13 +135,16 @@ public class MediaFile {
         if (isWMAEnabled()) {
             addFileType("WMA", FILE_TYPE_WMA, "audio/x-ms-wma");
         }
+        addFileType("QCP", FILE_TYPE_QCP, "audio/qcp");
         addFileType("OGG", FILE_TYPE_OGG, "application/ogg");
         addFileType("OGA", FILE_TYPE_OGG, "application/ogg");
         addFileType("AAC", FILE_TYPE_AAC, "audio/aac");
+        addFileType("3GPP", FILE_TYPE_3GPA, "audio/3gpp");
  
         addFileType("MID", FILE_TYPE_MID, "audio/midi");
         addFileType("MIDI", FILE_TYPE_MID, "audio/midi");
         addFileType("XMF", FILE_TYPE_MID, "audio/midi");
+        addFileType("MXMF", FILE_TYPE_MID, "audio/mobile-xmf");
         addFileType("RTTTL", FILE_TYPE_MID, "audio/midi");
         addFileType("SMF", FILE_TYPE_SMF, "audio/sp-midi");
         addFileType("IMY", FILE_TYPE_IMY, "audio/imelody");
@@ -162,6 +169,7 @@ public class MediaFile {
         addFileType("PNG", FILE_TYPE_PNG, "image/png");
         addFileType("BMP", FILE_TYPE_BMP, "image/x-ms-bmp");
         addFileType("WBMP", FILE_TYPE_WBMP, "image/vnd.wap.wbmp");
+        addFileType("RAW", FILE_TYPE_RAW, "image/raw");
  
         addFileType("M3U", FILE_TYPE_M3U, "audio/x-mpegurl");
         addFileType("PLS", FILE_TYPE_PLS, "audio/x-scpls");

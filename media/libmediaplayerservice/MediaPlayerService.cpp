@@ -193,6 +193,7 @@ extmap FILE_EXTS [] =  {
         {".midi", SONIVOX_PLAYER},
         {".smf", SONIVOX_PLAYER},
         {".xmf", SONIVOX_PLAYER},
+        {".mxmf", SONIVOX_PLAYER},
         {".imy", SONIVOX_PLAYER},
         {".rtttl", SONIVOX_PLAYER},
         {".rtx", SONIVOX_PLAYER},
@@ -666,15 +667,47 @@ void MediaPlayerService::Client::disconnect()
     IPCThreadState::self()->flushCommands();
 }
 
-static player_type getDefaultPlayerType() {
+static player_type getDefaultPlayerType(const char *url) {
 #if BUILD_WITH_FULL_STAGEFRIGHT
     char value[PROPERTY_VALUE_MAX];
     if (property_get("media.stagefright.enable-player", value, NULL)
         && (!strcmp(value, "1") || !strcasecmp(value, "true"))) {
-        return STAGEFRIGHT_PLAYER;
+        if (PVPlayer::usePVPlayer(url)==OK) {
+            LOGV("usePVPlayer: asking for PVPlayer to play qcelp, evrc, raw aac, or file with LPA implementation");
+            LOGE("Returning PV_PLAYER*************************");
+            return PV_PLAYER;
+        }
+        else {
+            LOGV("usePVPlayer: did not detect file to be qcelp, evrc, raw aac, or file with LPA implementation");
+            LOGE("The Default player that is returned is STAGEFRIGHT**************");
+            return STAGEFRIGHT_PLAYER;
+        }
     }
 #endif
 
+    LOGE("The Default Player is PV_PLAYER***********************");
+    return PV_PLAYER;
+}
+
+static player_type getDefaultPlayerType(int fd, int64_t offset, int64_t length) {
+#if BUILD_WITH_FULL_STAGEFRIGHT
+    char value[PROPERTY_VALUE_MAX];
+    if (property_get("media.stagefright.enable-player", value, NULL)
+        && (!strcmp(value, "1") || !strcasecmp(value, "true"))) {
+        if (PVPlayer::usePVPlayer(fd,offset,length)==OK) {
+            LOGV("usePVPlayer: asking for PVPlayer to play qcelp, evrc, raw aac, or file with LPA implementation");
+            LOGE("Returning PV_PLAYER*************************");
+            return PV_PLAYER;
+        }
+        else {
+            LOGV("usePVPlayer: did not detect file to be qcelp, evrc, raw aac, or file with LPA implementation");
+            LOGE("The Default player that is returned is STAGEFRIGHT**************");
+            return STAGEFRIGHT_PLAYER;
+        }
+    }
+#endif
+
+    LOGE("The Default Player is PV_PLAYER***********************");
     return PV_PLAYER;
 }
 
@@ -706,6 +739,10 @@ player_type getPlayerType(int fd, int64_t offset, int64_t length)
     lseek(fd, offset, SEEK_SET);
 
     long ident = *((long*)buf);
+    long identmidi = *((long*)(buf + 5*sizeof(long)));
+
+    if ((ident == 0x46464952) && (identmidi == 0x6468544D)) // RIFF encapsulated MIDI files are not supported
+        return NO_PLAYER;
 
     // Ogg vorbis?
     if (ident == 0x5367674f) // 'OggS'
@@ -736,7 +773,7 @@ player_type getPlayerType(int fd, int64_t offset, int64_t length)
         EAS_Shutdown(easdata);
     }
 
-    return getDefaultPlayerType();
+    return getDefaultPlayerType(fd,offset,length);
 }
 
 player_type getPlayerType(const char* url)
@@ -780,7 +817,7 @@ player_type getPlayerType(const char* url)
         return PV_PLAYER;
     }
 
-    return getDefaultPlayerType();
+    return getDefaultPlayerType(url);
 }
 
 static sp<MediaPlayerBase> createPlayer(player_type playerType, void* cookie,
@@ -811,6 +848,10 @@ static sp<MediaPlayerBase> createPlayer(player_type playerType, void* cookie,
         case TEST_PLAYER:
             LOGV("Create Test Player stub");
             p = new TestPlayerStub();
+            break;
+        case NO_PLAYER:
+            LOGV(" No Player supported");
+            p = NULL;
             break;
     }
     if (p != NULL) {
@@ -1415,6 +1456,7 @@ MediaPlayerService::AudioOutput::AudioOutput()
     : mCallback(NULL),
       mCallbackCookie(NULL) {
     mTrack = 0;
+    mSession = 0;
     mStreamType = AudioSystem::MUSIC;
     mLeftVolume = 1.0;
     mRightVolume = 1.0;
@@ -1427,6 +1469,7 @@ MediaPlayerService::AudioOutput::AudioOutput()
 MediaPlayerService::AudioOutput::~AudioOutput()
 {
     close();
+    closeSession();
 }
 
 void MediaPlayerService::AudioOutput::setMinBufferCount()
@@ -1488,6 +1531,32 @@ status_t MediaPlayerService::AudioOutput::getPosition(uint32_t *position)
 {
     if (mTrack == 0) return NO_INIT;
     return mTrack->getPosition(position);
+}
+status_t MediaPlayerService::AudioOutput::openSession(
+        int format, int sessionId)
+{
+    uint32_t flags = 0;
+    mCallback = NULL;
+    mCallbackCookie = NULL;
+    if (mSession) close();
+    mSession = NULL;
+
+    flags |= AudioSystem::OUTPUT_FLAG_DIRECT;
+
+    AudioTrack *t = new AudioTrack(
+                mStreamType,
+                format,
+                flags,
+                sessionId);
+    LOGV("openSession: AudioTrack created successfully track(%p)",t);
+    if ((t == 0) || (t->initCheck() != NO_ERROR)) {
+        LOGE("Unable to create audio track");
+        delete t;
+        return NO_INIT;
+    }
+    LOGV("openSession: Out");
+    mSession = t;
+    return NO_ERROR;
 }
 
 status_t MediaPlayerService::AudioOutput::open(
@@ -1621,8 +1690,35 @@ void MediaPlayerService::AudioOutput::pause()
 void MediaPlayerService::AudioOutput::close()
 {
     LOGV("close");
-    delete mTrack;
-    mTrack = 0;
+    if(mTrack != NULL) {
+        delete mTrack;
+        mTrack = 0;
+    }
+}
+
+void MediaPlayerService::AudioOutput::closeSession()
+{
+    LOGV("closeSession");
+    if(mSession != NULL) {
+        delete mSession;
+        mSession = 0;
+    }
+}
+
+void MediaPlayerService::AudioOutput::pauseSession()
+{
+    LOGV("pauseSession");
+    if(mSession != NULL) {
+        mSession->pause();
+    }
+}
+
+void MediaPlayerService::AudioOutput::resumeSession()
+{
+    LOGV("resumeSession");
+    if(mSession != NULL) {
+        mSession->start();
+    }
 }
 
 void MediaPlayerService::AudioOutput::setVolume(float left, float right)
