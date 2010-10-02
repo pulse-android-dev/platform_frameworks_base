@@ -83,6 +83,9 @@ public class SettingsProvider extends ContentProvider {
         SqlArguments(Uri url, String where, String[] args) {
             if (url.getPathSegments().size() == 1) {
                 this.table = url.getPathSegments().get(0);
+                if (!DatabaseHelper.isValidTable(this.table)) {
+                    throw new IllegalArgumentException("Bad root path: " + this.table);
+                }
                 this.where = where;
                 this.args = args;
             } else if (url.getPathSegments().size() != 2) {
@@ -91,6 +94,9 @@ public class SettingsProvider extends ContentProvider {
                 throw new UnsupportedOperationException("WHERE clause not supported: " + url);
             } else {
                 this.table = url.getPathSegments().get(0);
+                if (!DatabaseHelper.isValidTable(this.table)) {
+                    throw new IllegalArgumentException("Bad root path: " + this.table);
+                }
                 if ("system".equals(this.table) || "secure".equals(this.table)) {
                     this.where = Settings.NameValueTable.NAME + "=?";
                     this.args = new String[] { url.getPathSegments().get(1) };
@@ -105,6 +111,9 @@ public class SettingsProvider extends ContentProvider {
         SqlArguments(Uri url) {
             if (url.getPathSegments().size() == 1) {
                 this.table = url.getPathSegments().get(0);
+                if (!DatabaseHelper.isValidTable(this.table)) {
+                    throw new IllegalArgumentException("Bad root path: " + this.table);
+                }
                 this.where = null;
                 this.args = null;
             } else {
@@ -213,16 +222,11 @@ public class SettingsProvider extends ContentProvider {
             final String value = c.moveToNext() ? c.getString(0) : null;
             if (value == null) {
                 final SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-                String serial = SystemProperties.get("ro.serialno");
-                if (serial != null) {
-                    try {
-                        random.setSeed(serial.getBytes("UTF-8"));
-                    } catch (UnsupportedEncodingException ignore) {
-                        // stick with default seed
-                    }
-                }
+                String serial = SystemProperties.get("ro.serialno", "");
+                random.setSeed(
+                    (serial + System.nanoTime() + new SecureRandom().nextLong()).getBytes());
                 final String newAndroidIdValue = Long.toHexString(random.nextLong());
-                Log.d(TAG, "Generated and saved new ANDROID_ID");
+                Log.d(TAG, "Generated and saved new ANDROID_ID [" + newAndroidIdValue + "]");
                 final ContentValues values = new ContentValues();
                 values.put(Settings.NameValueTable.NAME, Settings.Secure.ANDROID_ID);
                 values.put(Settings.NameValueTable.VALUE, newAndroidIdValue);
