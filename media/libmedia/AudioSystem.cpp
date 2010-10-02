@@ -48,7 +48,6 @@ uint32_t AudioSystem::gPrevInSamplingRate = 16000;
 int AudioSystem::gPrevInFormat = AudioSystem::PCM_16_BIT;
 int AudioSystem::gPrevInChannelCount = 1;
 size_t AudioSystem::gInBuffSize = 0;
-int AudioSystem::gPhoneState = AudioSystem::MODE_NORMAL;
 
 
 // establish binder interface to AudioFlinger service
@@ -165,19 +164,9 @@ status_t AudioSystem::getStreamMute(int stream, bool* mute)
 status_t AudioSystem::setMode(int mode)
 {
     if (mode >= NUM_MODES) return BAD_VALUE;
-    gPhoneState = mode;
     const sp<IAudioFlinger>& af = AudioSystem::get_audio_flinger();
     if (af == 0) return PERMISSION_DENIED;
     return af->setMode(mode);
-}
-
-bool AudioSystem::isModeInCall()
-{
-    if (gPhoneState == AudioSystem::MODE_IN_CALL) {
-        return true;
-    }
-
-    return false;
 }
 
 
@@ -373,13 +362,6 @@ unsigned int AudioSystem::getInputFramesLost(audio_io_handle_t ioHandle) {
 
     result = af->getInputFramesLost(ioHandle);
     return result;
-}
-
-status_t AudioSystem::setFmVolume(float value)
-{
-    const sp<IAudioFlinger>& af = AudioSystem::get_audio_flinger();
-    if (af == 0) return PERMISSION_DENIED;
-    return af->setFmVolume(value);
 }
 
 // ---------------------------------------------------------------------------
@@ -602,25 +584,6 @@ audio_io_handle_t AudioSystem::getOutput(stream_type stream,
     return output;
 }
 
-audio_io_handle_t AudioSystem::getSession(stream_type   stream,
-                                          uint32_t      format,
-                                          output_flags  flags,
-                                          int           sessionId)
-{
-    audio_io_handle_t output = 0;
-
-    if ((flags & AudioSystem::OUTPUT_FLAG_DIRECT) == 0) {
-        return 0;
-    }
-
-    const sp<IAudioPolicyService>& aps = AudioSystem::get_audio_policy_service();
-    if (aps == 0) return 0;
-
-    output = aps->getSession(stream, format, flags, sessionId);
-
-    return output;
-}
-
 status_t AudioSystem::startOutput(audio_io_handle_t output, AudioSystem::stream_type stream)
 {
     const sp<IAudioPolicyService>& aps = AudioSystem::get_audio_policy_service();
@@ -640,27 +603,6 @@ void AudioSystem::releaseOutput(audio_io_handle_t output)
     const sp<IAudioPolicyService>& aps = AudioSystem::get_audio_policy_service();
     if (aps == 0) return;
     aps->releaseOutput(output);
-}
-
-status_t AudioSystem::pauseSession(audio_io_handle_t output, stream_type stream)
-{
-    const sp<IAudioPolicyService>& aps = AudioSystem::get_audio_policy_service();
-    if (aps == 0) return PERMISSION_DENIED;
-    return aps->pauseSession(output, stream);
-}
-
-status_t AudioSystem::resumeSession(audio_io_handle_t output, stream_type stream)
-{
-    const sp<IAudioPolicyService>& aps = AudioSystem::get_audio_policy_service();
-    if (aps == 0) return PERMISSION_DENIED;
-    return aps->resumeSession(output, stream);
-}
-
-void AudioSystem::closeSession(audio_io_handle_t output)
-{
-    const sp<IAudioPolicyService>& aps = AudioSystem::get_audio_policy_service();
-    if (aps == 0) return;
-    aps->closeSession(output);
 }
 
 audio_io_handle_t AudioSystem::getInput(int inputSource,
@@ -826,8 +768,6 @@ bool AudioSystem::isValidFormat(uint32_t format)
     case         HE_AAC_V1:
     case         HE_AAC_V2:
     case         VORBIS:
-    case         EVRC:
-    case         QCELP:
         return true;
     default:
         return false;

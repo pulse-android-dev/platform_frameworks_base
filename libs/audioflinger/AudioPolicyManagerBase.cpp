@@ -256,9 +256,7 @@ void AudioPolicyManagerBase::setPhoneState(int state)
     // store previous phone state for management of sonification strategy below
     int oldState = mPhoneState;
     mPhoneState = state;
-    // force routing command to audio hardware when starting call
-    // even if no device change is needed
-    bool force = (mPhoneState == AudioSystem::MODE_IN_CALL);
+    bool force = false;
 
     // are we entering or starting a call
     if ((oldState != AudioSystem::MODE_IN_CALL) && (state == AudioSystem::MODE_IN_CALL)) {
@@ -292,11 +290,8 @@ void AudioPolicyManagerBase::setPhoneState(int state)
 
     // force routing command to audio hardware when ending call
     // even if no device change is needed
-    if (oldState == AudioSystem::MODE_IN_CALL) {
-        if (newDevice == 0) {
-            newDevice = hwOutputDesc->device();
-        }
-        force = true;
+    if (oldState == AudioSystem::MODE_IN_CALL && newDevice == 0) {
+        newDevice = hwOutputDesc->device();
     }
 
     // when changing from ring tone to in call mode, mute the ringing tone
@@ -669,13 +664,13 @@ audio_io_handle_t AudioPolicyManagerBase::getInput(int inputSource,
     // adapt channel selection to input source
     switch(inputSource) {
     case AUDIO_SOURCE_VOICE_UPLINK:
-        channels |= AudioSystem::CHANNEL_IN_VOICE_UPLINK;
+        channels = AudioSystem::CHANNEL_IN_VOICE_UPLINK;
         break;
     case AUDIO_SOURCE_VOICE_DOWNLINK:
-        channels |= AudioSystem::CHANNEL_IN_VOICE_DNLINK;
+        channels = AudioSystem::CHANNEL_IN_VOICE_DNLINK;
         break;
     case AUDIO_SOURCE_VOICE_CALL:
-        channels |= (AudioSystem::CHANNEL_IN_VOICE_UPLINK | AudioSystem::CHANNEL_IN_VOICE_DNLINK);
+        channels = (AudioSystem::CHANNEL_IN_VOICE_UPLINK | AudioSystem::CHANNEL_IN_VOICE_DNLINK);
         break;
     default:
         break;
@@ -915,23 +910,9 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
         mForceUse[i] = AudioSystem::FORCE_NONE;
     }
 
-#ifndef HW_USES_DEFAULT_HEADSET
-    uint32_t defaultDevice = (uint32_t) AudioSystem::DEVICE_OUT_EARPIECE;
-#else
-    uint32_t defaultDevice = (uint32_t) AudioSystem::DEVICE_OUT_WIRED_HEADSET;
-#endif
-
     // devices available by default are speaker, ear piece and microphone
-#ifndef HW_USES_DEFAULT_HEADSET
-    mAvailableOutputDevices = AudioSystem::DEVICE_OUT_EARPIECE;
-#else
-    mAvailableOutputDevices = AudioSystem::DEVICE_OUT_WIRED_HEADSET;
-#endif
-
-#ifndef HW_NO_SPEAKER
-    mAvailableOutputDevices |= AudioSystem::DEVICE_OUT_SPEAKER;
-    defaultDevice = (uint32_t) AudioSystem::DEVICE_OUT_SPEAKER;
-#endif
+    mAvailableOutputDevices = AudioSystem::DEVICE_OUT_EARPIECE |
+                        AudioSystem::DEVICE_OUT_SPEAKER;
     mAvailableInputDevices = AudioSystem::DEVICE_IN_BUILTIN_MIC;
 
 #ifdef WITH_A2DP
@@ -943,7 +924,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
 
     // open hardware output
     AudioOutputDescriptor *outputDesc = new AudioOutputDescriptor();
-    outputDesc->mDevice = defaultDevice;
+    outputDesc->mDevice = (uint32_t)AudioSystem::DEVICE_OUT_SPEAKER;
     mHardwareOutput = mpClientInterface->openOutput(&outputDesc->mDevice,
                                     &outputDesc->mSamplingRate,
                                     &outputDesc->mFormat,
@@ -956,8 +937,7 @@ AudioPolicyManagerBase::AudioPolicyManagerBase(AudioPolicyClientInterface *clien
                 outputDesc->mSamplingRate, outputDesc->mFormat, outputDesc->mChannels);
     } else {
         addOutput(mHardwareOutput, outputDesc);
-        //routing is necessary if the default device is different than default hardware device
-        setOutputDevice(mHardwareOutput, defaultDevice, true);
+        setOutputDevice(mHardwareOutput, (uint32_t)AudioSystem::DEVICE_OUT_SPEAKER, true);
     }
 
     updateDeviceForStrategy();
@@ -1411,7 +1391,6 @@ AudioPolicyManagerBase::routing_strategy AudioPolicyManagerBase::getStrategy(Aud
         // while key clicks are played produces a poor result
     case AudioSystem::TTS:
     case AudioSystem::MUSIC:
-    case AudioSystem::FM:
         return STRATEGY_MEDIA;
     }
 }
@@ -1452,6 +1431,10 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
             // FALL THROUGH
 
         default:    // FORCE_NONE
+            device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADPHONE;
+            if (device) break;
+            device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET;
+            if (device) break;
 #ifdef WITH_A2DP
             // when not in a phone call, phone strategy should route STREAM_VOICE_CALL to A2DP
             if (mPhoneState != AudioSystem::MODE_IN_CALL) {
@@ -1461,10 +1444,6 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
                 if (device) break;
             }
 #endif
-            device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADPHONE;
-            if (device) break;
-            device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET;
-            if (device) break;
             device = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_EARPIECE;
             if (device == 0) {
                 LOGE("getDeviceForStrategy() earpiece device not found");
@@ -1509,6 +1488,12 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
 
     case STRATEGY_MEDIA: {
         uint32_t device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_AUX_DIGITAL;
+        if (device2 == 0) {
+            device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADPHONE;
+        }
+        if (device2 == 0) {
+            device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET;
+        }
 #ifdef WITH_A2DP
         if (mA2dpOutput != 0) {
             if (strategy == STRATEGY_SONIFICATION && !a2dpUsedForSonification()) {
@@ -1526,28 +1511,13 @@ uint32_t AudioPolicyManagerBase::getDeviceForStrategy(routing_strategy strategy,
         }
 #endif
         if (device2 == 0) {
-            device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADPHONE;
-        }
-        if (device2 == 0) {
-            device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_WIRED_HEADSET;
-        }
-        if (device2 == 0) {
             device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_SPEAKER;
-        }
-
-        if (device2 == 0) {
-            device2 = mAvailableOutputDevices & AudioSystem::DEVICE_OUT_EARPIECE;
         }
 
         // device is DEVICE_OUT_SPEAKER if we come from case STRATEGY_SONIFICATION, 0 otherwise
         device |= device2;
-        // Do not play media stream if in call and the requested device would change the hardware
-        // output routing
-        if (mPhoneState == AudioSystem::MODE_IN_CALL &&
-            !AudioSystem::isA2dpDevice((AudioSystem::audio_devices)device) &&
-            device != getDeviceForStrategy(STRATEGY_PHONE)) {
-            device = 0;
-            LOGV("getDeviceForStrategy() incompatible media and phone devices");
+        if (device == 0) {
+            LOGE("getDeviceForStrategy() speaker device not found");
         }
         } break;
 
@@ -1743,7 +1713,7 @@ status_t AudioPolicyManagerBase::checkAndSetVolume(int stream, int index, audio_
 
     float volume = computeVolume(stream, index, output, device);
     // do not set volume if the float value did not change
-    if ((volume != mOutputs.valueFor(output)->mCurVolume[stream]) || (stream == AudioSystem::VOICE_CALL) || force) {
+    if (volume != mOutputs.valueFor(output)->mCurVolume[stream] || force) {
         mOutputs.valueFor(output)->mCurVolume[stream] = volume;
         LOGV("setStreamVolume() for output %d stream %d, volume %f, delay %d", output, stream, volume, delayMs);
         if (stream == AudioSystem::VOICE_CALL ||

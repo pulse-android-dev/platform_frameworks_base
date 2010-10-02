@@ -145,8 +145,6 @@ public class MediaRecorder
         /** Microphone audio source tuned for voice recognition if available, behaves like
          *  {@link #DEFAULT} otherwise. */
         public static final int VOICE_RECOGNITION = 6;
-        public static final int FM_RX = 7;
-        public static final int FM_RX_A2DP = 8;
     }
 
     /**
@@ -190,10 +188,6 @@ public class MediaRecorder
         public static final int AAC_ADIF = 5;
         /** @hide AAC ADTS file format */
         public static final int AAC_ADTS = 6;
-        /** QCP file format */
-        public static final int QCP = 7;
-        /** 3GPP2 media file format*/
-        public static final int THREE_GPP2 = 8;
     };
 
     /**
@@ -208,18 +202,14 @@ public class MediaRecorder
         public static final int DEFAULT = 0;
         /** AMR (Narrowband) audio codec */
         public static final int AMR_NB = 1;
-        /** AMR (Wideband) audio codec */
+        /** @hide AMR (Wideband) audio codec */
         public static final int AMR_WB = 2;
-        /** AAC audio codec */
+        /** @hide AAC audio codec */
         public static final int AAC = 3;
-        /** enhanced AAC audio codec */
+        /** @hide enhanced AAC audio codec */
         public static final int AAC_PLUS = 4;
-        /** enhanced AAC plus audio codec */
+        /** @hide enhanced AAC plus audio codec */
         public static final int EAAC_PLUS = 5;
-        /** EVRC audio codec */
-        public static final int EVRC = 6;
-        /** QCELP audio codec */
-        public static final int QCELP =7;
     }
 
     /**
@@ -267,9 +257,6 @@ public class MediaRecorder
      * @see android.media.MediaRecorder.VideoSource
      */
     public native void setVideoSource(int video_source)
-            throws IllegalStateException;
-
-    public native void setCameraParameters(String params)
             throws IllegalStateException;
 
     /**
@@ -611,10 +598,6 @@ public class MediaRecorder
      * @see android.media.MediaRecorder.OnInfoListener
      */
     public static final int MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED = 801;
-    /** Unsupported resolution according to target.
-     * @see android.media.MediaRecorder.OnInfoListener
-     */
-    public static final int MEDIA_RECORDER_UNSUPPORTED_RESOLUTION = 802;
 
     /**
      * Interface definition for a callback to be invoked when an error

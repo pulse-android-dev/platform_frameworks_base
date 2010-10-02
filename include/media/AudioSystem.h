@@ -45,7 +45,6 @@ public:
         ENFORCED_AUDIBLE = 7, // Sounds that cannot be muted by user and must be routed to speaker
         DTMF             = 8,
         TTS              = 9,
-        FM              = 10,
         NUM_STREAM_TYPES
     };
 
@@ -93,8 +92,6 @@ public:
         HE_AAC_V1           = 0x05000000,
         HE_AAC_V2           = 0x06000000,
         VORBIS              = 0x07000000,
-        EVRC                = 0x08000000,
-        QCELP               = 0x09000000,
         MAIN_FORMAT_MASK    = 0xFF000000,
         SUB_FORMAT_MASK     = 0x00FFFFFF,
         // Aliases
@@ -224,7 +221,6 @@ public:
         size_t* buffSize);
 
     static status_t setVoiceVolume(float volume);
-    static status_t setFmVolume(float volume);
 
     // return the number of audio frames written by AudioFlinger to audio HAL and
     // audio dsp to DAC since the output on which the specificed stream is playing
@@ -255,13 +251,11 @@ public:
         DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES = 0x100,
         DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER = 0x200,
         DEVICE_OUT_AUX_DIGITAL = 0x400,
-        DEVICE_OUT_HDMI = 0x800,
-        DEVICE_OUT_FM = 0x1000,
         DEVICE_OUT_DEFAULT = 0x8000,
         DEVICE_OUT_ALL = (DEVICE_OUT_EARPIECE | DEVICE_OUT_SPEAKER | DEVICE_OUT_WIRED_HEADSET |
-                DEVICE_OUT_WIRED_HEADPHONE | DEVICE_OUT_FM | DEVICE_OUT_BLUETOOTH_SCO | DEVICE_OUT_BLUETOOTH_SCO_HEADSET |
+                DEVICE_OUT_WIRED_HEADPHONE | DEVICE_OUT_BLUETOOTH_SCO | DEVICE_OUT_BLUETOOTH_SCO_HEADSET |
                 DEVICE_OUT_BLUETOOTH_SCO_CARKIT | DEVICE_OUT_BLUETOOTH_A2DP | DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES |
-                DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER | DEVICE_OUT_AUX_DIGITAL | DEVICE_OUT_HDMI | DEVICE_OUT_DEFAULT),
+                DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER | DEVICE_OUT_AUX_DIGITAL | DEVICE_OUT_DEFAULT),
         DEVICE_OUT_ALL_A2DP = (DEVICE_OUT_BLUETOOTH_A2DP | DEVICE_OUT_BLUETOOTH_A2DP_HEADPHONES |
                 DEVICE_OUT_BLUETOOTH_A2DP_SPEAKER),
 
@@ -274,13 +268,11 @@ public:
         DEVICE_IN_AUX_DIGITAL = 0x200000,
         DEVICE_IN_VOICE_CALL = 0x400000,
         DEVICE_IN_BACK_MIC = 0x800000,
-        DEVICE_IN_FM_RX = 0x1000000,
-        DEVICE_IN_FM_RX_A2DP = 0x2000000,
         DEVICE_IN_DEFAULT = 0x80000000,
 
         DEVICE_IN_ALL = (DEVICE_IN_COMMUNICATION | DEVICE_IN_AMBIENT | DEVICE_IN_BUILTIN_MIC |
                 DEVICE_IN_BLUETOOTH_SCO_HEADSET | DEVICE_IN_WIRED_HEADSET | DEVICE_IN_AUX_DIGITAL |
-                DEVICE_IN_VOICE_CALL | DEVICE_IN_BACK_MIC | DEVICE_IN_FM_RX | DEVICE_IN_FM_RX_A2DP | DEVICE_IN_DEFAULT)
+                DEVICE_IN_VOICE_CALL | DEVICE_IN_BACK_MIC | DEVICE_IN_DEFAULT)
     };
 
     // device connection states used for setDeviceConnectionState()
@@ -293,8 +285,7 @@ public:
     // request to open a direct output with getOutput() (by opposition to sharing an output with other AudioTracks)
     enum output_flags {
         OUTPUT_FLAG_INDIRECT = 0x0,
-        OUTPUT_FLAG_DIRECT = 0x1,
-        OUTPUT_FLAG_SESSION = 0x2
+        OUTPUT_FLAG_DIRECT = 0x1
     };
 
     // device categories used for setForceUse()
@@ -329,7 +320,6 @@ public:
         INPUT_CLOSED,
         INPUT_CONFIG_CHANGED,
         STREAM_CONFIG_CHANGED,
-        A2DP_OUTPUT_STATE,
         NUM_CONFIG_EVENTS
     };
 
@@ -361,13 +351,6 @@ public:
                                         uint32_t format = FORMAT_DEFAULT,
                                         uint32_t channels = CHANNEL_OUT_STEREO,
                                         output_flags flags = OUTPUT_FLAG_INDIRECT);
-    static audio_io_handle_t getSession(stream_type stream,
-                                        uint32_t format = FORMAT_DEFAULT,
-                                        output_flags flags = OUTPUT_FLAG_DIRECT,
-                                        int32_t sessionId = -1);
-    static void closeSession(audio_io_handle_t output);
-    static status_t pauseSession(audio_io_handle_t output, stream_type stream);
-    static status_t resumeSession(audio_io_handle_t output, stream_type stream);
     static status_t startOutput(audio_io_handle_t output, AudioSystem::stream_type stream);
     static status_t stopOutput(audio_io_handle_t output, AudioSystem::stream_type stream);
     static void releaseOutput(audio_io_handle_t output);
@@ -399,7 +382,6 @@ public:
     static bool isInputChannel(uint32_t channel);
     static bool isValidFormat(uint32_t format);
     static bool isLinearPCM(uint32_t format);
-    static bool isModeInCall();
 
 private:
 
@@ -443,7 +425,6 @@ private:
     static uint32_t gPrevInSamplingRate;
     static int gPrevInFormat;
     static int gPrevInChannelCount;
-    static int gPhoneState;
 
     static sp<IAudioPolicyService> gAudioPolicyService;
 

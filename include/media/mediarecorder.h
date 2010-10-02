@@ -44,9 +44,7 @@ enum audio_source {
     AUDIO_SOURCE_VOICE_CALL = 4,
     AUDIO_SOURCE_CAMCORDER = 5,
     AUDIO_SOURCE_VOICE_RECOGNITION = 6,
-    AUDIO_SOURCE_FM_RX = 7,
-    AUDIO_SOURCE_FM_RX_A2DP = 8,
-    AUDIO_SOURCE_MAX = AUDIO_SOURCE_FM_RX_A2DP,
+    AUDIO_SOURCE_MAX = AUDIO_SOURCE_VOICE_RECOGNITION,
 
     AUDIO_SOURCE_LIST_END  // must be last - used to validate audio source type
 };
@@ -74,8 +72,7 @@ enum output_format {
     OUTPUT_FORMAT_AMR_WB = 4,
     OUTPUT_FORMAT_AAC_ADIF = 5,
     OUTPUT_FORMAT_AAC_ADTS = 6,
-    OUTPUT_FOMRAT_QCP = 7, // QCP file format
-    OUTPUT_FORMAT_THREE_GPP2 = 8, /*3GPP2*/
+
     OUTPUT_FORMAT_LIST_END // must be last - used to validate format type
 };
 
@@ -86,8 +83,6 @@ enum audio_encoder {
     AUDIO_ENCODER_AAC = 3,
     AUDIO_ENCODER_AAC_PLUS = 4,
     AUDIO_ENCODER_EAAC_PLUS = 5,
-    AUDIO_ENCODER_EVRC = 6,
-    AUDIO_ENCODER_QCELP = 7,
 
     AUDIO_ENCODER_LIST_END // must be the last - used to validate the audio encoder type
 };
@@ -140,8 +135,7 @@ enum media_recorder_error_type {
 enum media_recorder_info_type {
     MEDIA_RECORDER_INFO_UNKNOWN                   = 1,
     MEDIA_RECORDER_INFO_MAX_DURATION_REACHED      = 800,
-    MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED      = 801,
-    MEDIA_RECORDER_UNSUPPORTED_RESOLUTION         = 802
+    MEDIA_RECORDER_INFO_MAX_FILESIZE_REACHED      = 801
 };
 
 // ----------------------------------------------------------------------------
@@ -173,7 +167,6 @@ public:
     status_t    setVideoSize(int width, int height);
     status_t    setVideoFrameRate(int frames_per_second);
     status_t    setParameters(const String8& params);
-    status_t    setCameraParameters(const String8& params);
     status_t    setListener(const sp<MediaRecorderListener>& listener);
     status_t    prepare();
     status_t    getMaxAmplitude(int* max);

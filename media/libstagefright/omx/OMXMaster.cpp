@@ -24,11 +24,6 @@
 #include "OMXPVCodecsPlugin.h"
 #endif
 
-#define LOG_NDEBUG 0
-#define LOG_TAG "OMX_Master_StageFright"
-#include <utils/Log.h>
-
-
 namespace android {
 
 OMXMaster::OMXMaster()
@@ -113,8 +108,6 @@ OMX_ERRORTYPE OMXMaster::makeComponentInstance(
     Mutex::Autolock autoLock(mLock);
 
     *component = NULL;
-
-    LOGE("Request to create component makeComponentInstance *************************** %s", name);
 
     ssize_t index = mPluginByComponentName.indexOfKey(String8(name));
 

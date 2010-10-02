@@ -49,8 +49,6 @@ import android.view.VolumePanel;
 import android.os.SystemProperties;
 
 import com.android.internal.telephony.ITelephony;
-import com.android.internal.telephony.Phone;
-import com.android.internal.telephony.cdma.TtyIntent;
 
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -163,8 +161,7 @@ public class AudioService extends IAudioService.Stub {
         15, // STREAM_BLUETOOTH_SCO
         7,  // STREAM_SYSTEM_ENFORCED
         15, // STREAM_DTMF
-        15,  // STREAM_TTS
-        15 // STREAM_FM
+        15  // STREAM_TTS
     };
     /* STREAM_VOLUME_ALIAS[] indicates for each stream if it uses the volume settings
      * of another stream: This avoids multiplying the volume settings for hidden
@@ -180,8 +177,7 @@ public class AudioService extends IAudioService.Stub {
         AudioSystem.STREAM_BLUETOOTH_SCO, // STREAM_BLUETOOTH_SCO
         AudioSystem.STREAM_SYSTEM,  // STREAM_SYSTEM_ENFORCED
         AudioSystem.STREAM_VOICE_CALL, // STREAM_DTMF
-        AudioSystem.STREAM_MUSIC,  // STREAM_TTS
-        AudioSystem.STREAM_MUSIC
+        AudioSystem.STREAM_MUSIC  // STREAM_TTS
     };
 
     private AudioSystem.ErrorCallback mAudioSystemCallback = new AudioSystem.ErrorCallback() {
@@ -303,13 +299,8 @@ public class AudioService extends IAudioService.Stub {
                 new IntentFilter(Intent.ACTION_HEADSET_PLUG);
         intentFilter.addAction(BluetoothA2dp.ACTION_SINK_STATE_CHANGED);
         intentFilter.addAction(BluetoothHeadset.ACTION_STATE_CHANGED);
-        intentFilter.addAction(TtyIntent.TTY_ENABLED_CHANGE_ACTION);
         intentFilter.addAction(Intent.ACTION_DOCK_EVENT);
         intentFilter.addAction(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED);
-        intentFilter.addAction("HDMI_CONNECTED");
-        intentFilter.addAction("HDMI_DISCONNECTED");
-        intentFilter.addCategory(Intent.CATEGORY_DEFAULT);
-        intentFilter.addAction(Intent.ACTION_FM);
         context.registerReceiver(mReceiver, intentFilter);
 
         // Register for media button intent broadcasts.
@@ -1903,25 +1894,6 @@ public class AudioService extends IAudioService.Stub {
                         mConnectedDevices.put( new Integer(AudioSystem.DEVICE_OUT_WIRED_HEADPHONE), "");
                     }
                 }
-            } else if (action.equals(TtyIntent.TTY_ENABLED_CHANGE_ACTION)) {
-                String tty_mode;
-                switch (Settings.Secure.getInt(mContentResolver,
-                            Settings.Secure.PREFERRED_TTY_MODE,
-                            Phone.TTY_MODE_OFF)) {
-                    case Phone.TTY_MODE_FULL:
-                        tty_mode = "full";
-                        break;
-                    case Phone.TTY_MODE_VCO:
-                        tty_mode = "vco";
-                        break;
-                    case Phone.TTY_MODE_HCO:
-                        tty_mode = "hco";
-                        break;
-                    case Phone.TTY_MODE_OFF:
-                    default:
-                        tty_mode = "off";
-                }
-                AudioSystem.setParameters("tty_mode="+tty_mode);
             } else if (action.equals(BluetoothHeadset.ACTION_AUDIO_STATE_CHANGED)) {
                 int state = intent.getIntExtra(BluetoothHeadset.EXTRA_AUDIO_STATE,
                                                BluetoothHeadset.STATE_ERROR);
@@ -1944,33 +1916,6 @@ public class AudioService extends IAudioService.Stub {
                             mContext.sendStickyBroadcast(newIntent);
                         }
                     }
-                }
-            } else if (action.equals("HDMI_CONNECTED")) {
-                Log.v(TAG, "HDMI connected");
-                AudioSystem.setDeviceConnectionState(AudioSystem.DEVICE_OUT_HDMI,
-                                                     AudioSystem.DEVICE_STATE_AVAILABLE,
-                                                     "");
-                mConnectedDevices.put( new Integer(AudioSystem.DEVICE_OUT_HDMI), "");
-            } else if (action.equals("HDMI_DISCONNECTED")) {
-                Log.v(TAG, "HDMI disconnected");
-                AudioSystem.setDeviceConnectionState(AudioSystem.DEVICE_OUT_HDMI,
-                                                     AudioSystem.DEVICE_STATE_UNAVAILABLE,
-                                                     "");
-                mConnectedDevices.remove(AudioSystem.DEVICE_OUT_HDMI);
-            } else if (action.equals(Intent.ACTION_FM)){
-               Log.v(TAG, "FM Intent received");
-               int state = intent.getIntExtra("state", 0);
-               boolean isConnected = mConnectedDevices.containsKey(AudioSystem.DEVICE_OUT_FM);
-               if(state == 1 && !isConnected){
-                    AudioSystem.setDeviceConnectionState(AudioSystem.DEVICE_OUT_FM,
-                            AudioSystem.DEVICE_STATE_AVAILABLE,
-                            "");
-                    mConnectedDevices.put( new Integer(AudioSystem.DEVICE_OUT_FM), "");
-                }else if(state == 0 && isConnected){
-                    AudioSystem.setDeviceConnectionState(AudioSystem.DEVICE_OUT_FM,
-                            AudioSystem.DEVICE_STATE_UNAVAILABLE,
-                            "");
-                    mConnectedDevices.remove(AudioSystem.DEVICE_OUT_FM);
                 }
             }
         }

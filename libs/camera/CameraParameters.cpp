@@ -30,10 +30,6 @@ const char CameraParameters::KEY_PREVIEW_FORMAT[] = "preview-format";
 const char CameraParameters::KEY_SUPPORTED_PREVIEW_FORMATS[] = "preview-format-values";
 const char CameraParameters::KEY_PREVIEW_FRAME_RATE[] = "preview-frame-rate";
 const char CameraParameters::KEY_SUPPORTED_PREVIEW_FRAME_RATES[] = "preview-frame-rate-values";
-const char CameraParameters::KEY_PREVIEW_FRAME_RATE_MODE[] = "preview-frame-rate-mode";
-const char CameraParameters::KEY_SUPPORTED_PREVIEW_FRAME_RATE_MODES[] = "preview-frame-rate-modes";
-const char CameraParameters::KEY_PREVIEW_FRAME_RATE_AUTO_MODE[] = "frame-rate-auto";
-const char CameraParameters::KEY_PREVIEW_FRAME_RATE_FIXED_MODE[] = "frame-rate-fixed";
 const char CameraParameters::KEY_PICTURE_SIZE[] = "picture-size";
 const char CameraParameters::KEY_SUPPORTED_PICTURE_SIZES[] = "picture-size-values";
 const char CameraParameters::KEY_PICTURE_FORMAT[] = "picture-format";
@@ -53,15 +49,10 @@ const char CameraParameters::KEY_WHITE_BALANCE[] = "whitebalance";
 const char CameraParameters::KEY_SUPPORTED_WHITE_BALANCE[] = "whitebalance-values";
 const char CameraParameters::KEY_EFFECT[] = "effect";
 const char CameraParameters::KEY_SUPPORTED_EFFECTS[] = "effect-values";
-const char CameraParameters::KEY_TOUCH_AF_AEC[] = "touch-af-aec";
-const char CameraParameters::KEY_SUPPORTED_TOUCH_AF_AEC[] = "touch-af-aec-values";
-const char CameraParameters::KEY_TOUCH_INDEX_AEC[] = "touch-index-aec";
 const char CameraParameters::KEY_ANTIBANDING[] = "antibanding";
 const char CameraParameters::KEY_SUPPORTED_ANTIBANDING[] = "antibanding-values";
 const char CameraParameters::KEY_SCENE_MODE[] = "scene-mode";
 const char CameraParameters::KEY_SUPPORTED_SCENE_MODES[] = "scene-mode-values";
-const char CameraParameters::KEY_SCENE_DETECT[] = "scene-detect";
-const char CameraParameters::KEY_SUPPORTED_SCENE_DETECT[] = "scene-detect-values";
 const char CameraParameters::KEY_FLASH_MODE[] = "flash-mode";
 const char CameraParameters::KEY_SUPPORTED_FLASH_MODES[] = "flash-mode-values";
 const char CameraParameters::KEY_FOCUS_MODE[] = "focus-mode";
@@ -78,8 +69,6 @@ const char CameraParameters::KEY_MAX_ZOOM[] = "max-zoom";
 const char CameraParameters::KEY_ZOOM_RATIOS[] = "zoom-ratios";
 const char CameraParameters::KEY_ZOOM_SUPPORTED[] = "zoom-supported";
 const char CameraParameters::KEY_SMOOTH_ZOOM_SUPPORTED[] = "smooth-zoom-supported";
-const char CameraParameters::KEY_CONTINUOUS_AF[] = "continuous-af";
-const char CameraParameters::KEY_SUPPORTED_CONTINUOUS_AF[] = "continuous-af-values";
 
 const char CameraParameters::TRUE[] = "true";
 
@@ -103,10 +92,6 @@ const char CameraParameters::EFFECT_POSTERIZE[] = "posterize";
 const char CameraParameters::EFFECT_WHITEBOARD[] = "whiteboard";
 const char CameraParameters::EFFECT_BLACKBOARD[] = "blackboard";
 const char CameraParameters::EFFECT_AQUA[] = "aqua";
-
-// Values for auto exposure settings.
-const char CameraParameters::TOUCH_AF_AEC_OFF[] = "touch-off";
-const char CameraParameters::TOUCH_AF_AEC_ON[] = "touch-on";
 
 // Values for antibanding settings.
 const char CameraParameters::ANTIBANDING_AUTO[] = "auto";
@@ -137,13 +122,7 @@ const char CameraParameters::SCENE_MODE_FIREWORKS[] = "fireworks";
 const char CameraParameters::SCENE_MODE_SPORTS[] = "sports";
 const char CameraParameters::SCENE_MODE_PARTY[] = "party";
 const char CameraParameters::SCENE_MODE_CANDLELIGHT[] = "candlelight";
-const char CameraParameters::SCENE_MODE_BACKLIGHT[] = "backlight";
-const char CameraParameters::SCENE_MODE_FLOWERS[] = "flowers";
 const char CameraParameters::SCENE_MODE_BARCODE[] = "barcode";
-
-// Values for auto scene detection settings.
-const char CameraParameters::SCENE_DETECT_OFF[] = "off";
-const char CameraParameters::SCENE_DETECT_ON[] = "on";
 
 // Formats for setPreviewFormat and setPictureFormat.
 const char CameraParameters::PIXEL_FORMAT_YUV422SP[] = "yuv422sp";
@@ -151,8 +130,6 @@ const char CameraParameters::PIXEL_FORMAT_YUV420SP[] = "yuv420sp";
 const char CameraParameters::PIXEL_FORMAT_YUV422I[] = "yuv422i-yuyv";
 const char CameraParameters::PIXEL_FORMAT_RGB565[] = "rgb565";
 const char CameraParameters::PIXEL_FORMAT_JPEG[] = "jpeg";
-const char CameraParameters::PIXEL_FORMAT_RAW[] = "raw";
-
 
 // Values for focus mode settings.
 const char CameraParameters::FOCUS_MODE_AUTO[] = "auto";
@@ -160,80 +137,6 @@ const char CameraParameters::FOCUS_MODE_INFINITY[] = "infinity";
 const char CameraParameters::FOCUS_MODE_MACRO[] = "macro";
 const char CameraParameters::FOCUS_MODE_FIXED[] = "fixed";
 const char CameraParameters::FOCUS_MODE_EDOF[] = "edof";
-const char CameraParameters::FOCUS_MODE_NORMAL[] = "normal";
-
-
-const char CameraParameters::KEY_SUPPORTED_THUMBNAIL_SIZES[] = "jpeg-thumbnail-size-values";
-const char CameraParameters::KEY_GPS_LATITUDE_REF[] = "gps-latitude-ref";
-const char CameraParameters::KEY_GPS_LONGITUDE_REF[] = "gps-longitude-ref";
-const char CameraParameters::KEY_GPS_ALTITUDE_REF[] = "gps-altitude-ref";
-const char CameraParameters::KEY_GPS_STATUS[] = "gps-status";
-const char CameraParameters::KEY_EXIF_DATETIME[] = "exif-datetime";
-
-const char CameraParameters::KEY_AUTO_EXPOSURE[] = "auto-exposure";
-const char CameraParameters::KEY_SUPPORTED_AUTO_EXPOSURE[] = "auto-exposure-values";
-
-const char CameraParameters::KEY_ISO_MODE[] = "iso";
-const char CameraParameters::KEY_SUPPORTED_ISO_MODES[] = "iso-values";
-const char CameraParameters::KEY_LENSSHADE[] = "lensshade";
-const char CameraParameters::KEY_SUPPORTED_LENSSHADE_MODES[] = "lensshade-values";
-const char CameraParameters::KEY_SHARPNESS[] = "sharpness";
-const char CameraParameters::KEY_MAX_SHARPNESS[] = "max-sharpness";
-const char CameraParameters::KEY_CONTRAST[] = "contrast";
-const char CameraParameters::KEY_MAX_CONTRAST[] = "max-contrast";
-const char CameraParameters::KEY_SATURATION[] = "saturation";
-const char CameraParameters::KEY_MAX_SATURATION[] = "max-saturation";
-
-
-// Values for auto exposure settings.
-const char CameraParameters::AUTO_EXPOSURE_FRAME_AVG[] = "frame-average";
-const char CameraParameters::AUTO_EXPOSURE_CENTER_WEIGHTED[] = "center-weighted";
-const char CameraParameters::AUTO_EXPOSURE_SPOT_METERING[] = "spot-metering";
-
-
-
-
-
-
-
-
- // Values for ISO Settings
-const char CameraParameters::ISO_AUTO[] = "auto";
-const char CameraParameters::ISO_HJR[] = "ISO_HJR";
-const char CameraParameters::ISO_100[] = "ISO100";
-const char CameraParameters::ISO_200[] = "ISO200";
-const char CameraParameters::ISO_400[] = "ISO400";
-const char CameraParameters::ISO_800[] = "ISO800";
-const char CameraParameters::ISO_1600[] = "ISO1600";
-
- //Values for Lens Shading
-const char CameraParameters::LENSSHADE_ENABLE[] = "enable";
-const char CameraParameters::LENSSHADE_DISABLE[] = "disable";
-
-//Values for Continuous AF
-const char CameraParameters::CONTINUOUS_AF_OFF[] = "caf-off";
-const char CameraParameters::CONTINUOUS_AF_ON[] = "caf-on";
-
-static const char* portrait = "portrait";
-static const char* landscape = "landscape";
-
-int CameraParameters::getOrientation() const
-{
-    const char* orientation = get("orientation");
-    if (orientation && !strcmp(orientation, portrait))
-        return CAMERA_ORIENTATION_PORTRAIT;
-    return CAMERA_ORIENTATION_LANDSCAPE;
-}
-void CameraParameters::setOrientation(int orientation)
-{
-    if (orientation == CAMERA_ORIENTATION_PORTRAIT) {
-        set("orientation", portrait);
-    } else {
-         set("orientation", landscape);
-    }
-}
-
-
 
 CameraParameters::CameraParameters()
                 : mMap()
@@ -407,16 +310,6 @@ int CameraParameters::getPreviewFrameRate() const
     return getInt(KEY_PREVIEW_FRAME_RATE);
 }
 
-void CameraParameters::setPreviewFrameRateMode(const char *mode)
-{
-    set(KEY_PREVIEW_FRAME_RATE_MODE, mode);
-}
-
-const char *CameraParameters::getPreviewFrameRateMode() const
-{
-    return get(KEY_PREVIEW_FRAME_RATE_MODE);
-}
-
 void CameraParameters::setPreviewFormat(const char *format)
 {
     set(KEY_PREVIEW_FORMAT, format);
@@ -469,30 +362,6 @@ void CameraParameters::dump() const
         k = mMap.keyAt(i);
         v = mMap.valueAt(i);
         LOGD("%s: %s\n", k.string(), v.string());
-    }
-}
-
-void CameraParameters::setTouchIndexAec(int x, int y)
-{
-    char str[32];
-    sprintf(str, "%dx%d", x, y);
-    set(KEY_TOUCH_INDEX_AEC, str);
-}
-
-void CameraParameters::getTouchIndexAec(int *x, int *y) const
-{
-    *x = -1;
-    *y = -1;
-
-    // Get the current string, if it doesn't exist, leave the -1x-1
-    const char *p = get(KEY_TOUCH_INDEX_AEC);
-    if (p == 0)
-        return;
-
-    int tempX, tempY;
-    if (parse_size(p, tempX, tempY) == 0) {
-        *x = tempX;
-        *y = tempY;
     }
 }
 

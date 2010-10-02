@@ -223,19 +223,6 @@ audio_io_handle_t AudioPolicyService::getOutput(AudioSystem::stream_type stream,
     return mpPolicyManager->getOutput(stream, samplingRate, format, channels, flags);
 }
 
-audio_io_handle_t AudioPolicyService::getSession(AudioSystem::stream_type stream,
-                                    uint32_t format,
-                                    AudioSystem::output_flags flags,
-                                    int32_t sessionId)
-{
-    if (mpPolicyManager == NULL) {
-        return 0;
-    }
-    LOGV("getSession() tid %d", gettid());
-    Mutex::Autolock _l(mLock);
-    return mpPolicyManager->getSession(stream, format, flags, sessionId);
-}
-
 status_t AudioPolicyService::startOutput(audio_io_handle_t output, AudioSystem::stream_type stream)
 {
     if (mpPolicyManager == NULL) {
@@ -463,77 +450,6 @@ audio_io_handle_t AudioPolicyService::openOutput(uint32_t *pDevices,
     return af->openOutput(pDevices, pSamplingRate, (uint32_t *)pFormat, pChannels, pLatencyMs, flags);
 }
 
-audio_io_handle_t AudioPolicyService::openSession(uint32_t *pDevices,
-                                uint32_t *pFormat,
-                                AudioSystem::output_flags flags,
-                                int32_t stream,
-                                int32_t sessionId)
-{
-    sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
-    if (af == 0) {
-        LOGW("openSession() could not get AudioFlinger");
-        return 0;
-    }
-
-    return af->openSession(pDevices, (uint32_t *)pFormat, flags, stream, sessionId);
-}
-
-status_t AudioPolicyService::pauseSession(audio_io_handle_t output, AudioSystem::stream_type stream)
-{
-    LOGV("pauseSession() tid %d", gettid());
-    if (mpPolicyManager != NULL) {
-        Mutex::Autolock _l(mLock);
-        mpPolicyManager->pauseSession(output,
-                                      stream);
-    }
-
-    sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
-    if (af == 0) {
-        LOGW("pauseSession() could not get AudioFlinger");
-        return 0;
-    }
-
-    return af->pauseSession((int) output, (int32_t) stream);
-}
-
-status_t AudioPolicyService::resumeSession(audio_io_handle_t output, AudioSystem::stream_type stream)
-{
-    LOGV("pauseSession() tid %d", gettid());
-
-    sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
-    if (af == 0) {
-        LOGW("resumeSession() could not get AudioFlinger");
-        return 0;
-    }
-
-    if (NO_ERROR != af->resumeSession((int) output, (int32_t) stream))
-    {
-        LOGE("Resume Session failed from AudioFligner");
-    }
-
-    if (mpPolicyManager != NULL) {
-        Mutex::Autolock _l(mLock);
-        mpPolicyManager->resumeSession(output,
-                                       stream);
-    }
-
-    return 0;
-}
-
-status_t AudioPolicyService::closeSession(audio_io_handle_t output)
-{
-    LOGV("closeSession() tid %d", gettid());
-    if (mpPolicyManager != NULL) {
-        Mutex::Autolock _l(mLock);
-        mpPolicyManager->releaseSession(output);
-    }
-
-    sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
-    if (af == 0) return PERMISSION_DENIED;
-
-    return af->closeSession(output);
-}
-
 audio_io_handle_t AudioPolicyService::openDuplicateOutput(audio_io_handle_t output1, audio_io_handle_t output2)
 {
     sp<IAudioFlinger> af = AudioSystem::get_audio_flinger();
@@ -551,6 +467,7 @@ status_t AudioPolicyService::closeOutput(audio_io_handle_t output)
 
     return af->closeOutput(output);
 }
+
 
 status_t AudioPolicyService::suspendOutput(audio_io_handle_t output)
 {
@@ -637,11 +554,6 @@ status_t AudioPolicyService::stopTone()
 status_t AudioPolicyService::setVoiceVolume(float volume, int delayMs)
 {
     return mAudioCommandThread->voiceVolumeCommand(volume, delayMs);
-}
-
-status_t AudioPolicyService::setFmVolume(float volume, int delayMs)
-{
-    return mAudioCommandThread->fmVolumeCommand(volume, delayMs);
 }
 
 // -----------  AudioPolicyService::AudioCommandThread implementation ----------
@@ -733,16 +645,6 @@ bool AudioPolicyService::AudioCommandThread::threadLoop()
                     VoiceVolumeData *data = (VoiceVolumeData *)command->mParam;
                     LOGV("AudioCommandThread() processing set voice volume volume %f", data->mVolume);
                     command->mStatus = AudioSystem::setVoiceVolume(data->mVolume);
-                    if (command->mWaitStatus) {
-                        command->mCond.signal();
-                        mWaitWorkCV.wait(mLock);
-                    }
-                    delete data;
-                    }break;
-                case SET_FM_VOLUME: {
-                    FmVolumeData *data = (FmVolumeData *)command->mParam;
-                    LOGV("AudioCommandThread() processing set fm volume volume %f", data->mVolume);
-                    command->mStatus = AudioSystem::setFmVolume(data->mVolume);
                     if (command->mWaitStatus) {
                         command->mCond.signal();
                         mWaitWorkCV.wait(mLock);
@@ -913,33 +815,6 @@ status_t AudioPolicyService::AudioCommandThread::voiceVolumeCommand(float volume
     return status;
 }
 
-status_t AudioPolicyService::AudioCommandThread::fmVolumeCommand(float volume, int delayMs)
-{
-    status_t status = NO_ERROR;
-
-    AudioCommand *command = new AudioCommand();
-    command->mCommand = SET_FM_VOLUME;
-    FmVolumeData *data = new FmVolumeData();
-    data->mVolume = volume;
-    command->mParam = data;
-    if (delayMs == 0) {
-        command->mWaitStatus = true;
-    } else {
-        command->mWaitStatus = false;
-    }
-    Mutex::Autolock _l(mLock);
-    insertCommand_l(command, delayMs);
-    LOGV("AudioCommandThread() adding set fm volume volume %f", volume);
-    mWaitWorkCV.signal();
-    if (command->mWaitStatus) {
-        command->mCond.wait(mLock);
-        status =  command->mStatus;
-        mWaitWorkCV.signal();
-    }
-    return status;
-}
-
-
 // insertCommand_l() must be called with mLock held
 void AudioPolicyService::AudioCommandThread::insertCommand_l(AudioCommand *command, int delayMs)
 {
@@ -998,9 +873,6 @@ void AudioPolicyService::AudioCommandThread::insertCommand_l(AudioCommand *comma
             if (data->mIO != data2->mIO) break;
             if (data->mStream != data2->mStream) break;
             LOGV("Filtering out volume command on output %d for stream %d", data->mIO, data->mStream);
-            removedCommands.add(command2);
-        } break;
-        case SET_FM_VOLUME: {
             removedCommands.add(command2);
         } break;
         case START_TONE:

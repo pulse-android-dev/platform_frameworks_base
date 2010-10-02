@@ -45,24 +45,12 @@ public:
     void getPreviewSize(int *width, int *height) const;
     void setPreviewFrameRate(int fps);
     int getPreviewFrameRate() const;
-    void setPreviewFrameRateMode(const char *mode);
-    const char *getPreviewFrameRateMode() const;
     void setPreviewFormat(const char *format);
     const char *getPreviewFormat() const;
     void setPictureSize(int width, int height);
     void getPictureSize(int *width, int *height) const;
     void setPictureFormat(const char *format);
     const char *getPictureFormat() const;
-    void setTouchIndexAec(int x, int y);
-    void getTouchIndexAec(int *x, int *y) const;
-
-    enum {
-        CAMERA_ORIENTATION_UNKNOWN = 0,
-        CAMERA_ORIENTATION_PORTRAIT = 1,
-        CAMERA_ORIENTATION_LANDSCAPE = 2,
-    };
-    int getOrientation() const;
-    void setOrientation(int orientation);
 
     void dump() const;
     status_t dump(int fd, const Vector<String16>& args) const;
@@ -89,12 +77,6 @@ public:
     // Supported number of preview frames per second.
     // Example value: "24,15,10". Read.
     static const char KEY_SUPPORTED_PREVIEW_FRAME_RATES[];
-    // The mode of preview frame rate.
-    // Example value: "frame-rate-auto, frame-rate-fixed".
-    static const char KEY_PREVIEW_FRAME_RATE_MODE[];
-    static const char KEY_SUPPORTED_PREVIEW_FRAME_RATE_MODES[];
-    static const char KEY_PREVIEW_FRAME_RATE_AUTO_MODE[];
-    static const char KEY_PREVIEW_FRAME_RATE_FIXED_MODE[];
     // The dimensions for captured pictures in pixels (width x height).
     // Example value: "1024x768". Read/write.
     static const char KEY_PICTURE_SIZE[];
@@ -113,10 +95,6 @@ public:
     // The height (in pixels) of EXIF thumbnail in Jpeg picture.
     // Example value: "384". Read/write.
     static const char KEY_JPEG_THUMBNAIL_HEIGHT[];
-
-    //++TODO is the following parameter is needed when jpeg thumbnail is available
-    static const char KEY_SUPPORTED_THUMBNAIL_SIZES[];
-
     // Supported EXIF thumbnail sizes (width x height). 0x0 means not thumbnail
     // in EXIF.
     // Example value: "512x384,320x240,0x0". Read only.
@@ -150,33 +128,6 @@ public:
     // GPS altitude. This will be stored in JPEG EXIF header.
     // Example value: "21.0". Write only.
     static const char KEY_GPS_ALTITUDE[];
-
-    static const char KEY_GPS_LATITUDE_REF[];
-    static const char KEY_GPS_LONGITUDE_REF[];
-    static const char KEY_GPS_ALTITUDE_REF[];
-    static const char KEY_GPS_STATUS[];
-    static const char KEY_EXIF_DATETIME[];
-
-    static const char KEY_AUTO_EXPOSURE[];
-    static const char KEY_SUPPORTED_AUTO_EXPOSURE[];
-    static const char KEY_ISO_MODE[];
-    static const char KEY_SUPPORTED_ISO_MODES[];
-    static const char KEY_LENSSHADE[] ;
-    static const char KEY_SUPPORTED_LENSSHADE_MODES[] ;
-    static const char KEY_SHARPNESS[];
-    static const char KEY_MAX_SHARPNESS[];
-    static const char KEY_CONTRAST[];
-    static const char KEY_MAX_CONTRAST[];
-    static const char KEY_SATURATION[];
-    static const char KEY_MAX_SATURATION[];
-
-    // Values for auto exposure settings.
-    static const char AUTO_EXPOSURE_FRAME_AVG[];
-    static const char AUTO_EXPOSURE_CENTER_WEIGHTED[];
-    static const char AUTO_EXPOSURE_SPOT_METERING[];
-
-
-
     // GPS timestamp (UTC in seconds since January 1, 1970). This should be
     // stored in JPEG EXIF header.
     // Example value: "1251192757". Write only.
@@ -196,11 +147,6 @@ public:
     // Supported color effect settings.
     // Example value: "none,mono,sepia". Read only.
     static const char KEY_SUPPORTED_EFFECTS[];
-    //Touch Af/AEC settings.
-    static const char KEY_TOUCH_AF_AEC[];
-    static const char KEY_SUPPORTED_TOUCH_AF_AEC[];
-    //Touch Index for AEC.
-    static const char KEY_TOUCH_INDEX_AEC[];
     // Current antibanding setting.
     // Example value: "auto" or ANTIBANDING_XXX constants. Read/write.
     static const char KEY_ANTIBANDING[];
@@ -213,12 +159,6 @@ public:
     // Supported scene mode settings.
     // Example value: "auto,night,fireworks". Read only.
     static const char KEY_SUPPORTED_SCENE_MODES[];
-    // Current auto scene detection mode.
-    // Example value: "off" or SCENE_DETECT_XXX constants. Read/write.
-    static const char KEY_SCENE_DETECT[];
-    // Supported auto scene detection settings.
-    // Example value: "off,backlight,snow/cloudy". Read only.
-    static const char KEY_SUPPORTED_SCENE_DETECT[];
     // Current flash mode.
     // Example value: "auto" or FLASH_MODE_XXX constants. Read/write.
     static const char KEY_FLASH_MODE[];
@@ -284,10 +224,6 @@ public:
     // Value for KEY_ZOOM_SUPPORTED or KEY_SMOOTH_ZOOM_SUPPORTED.
     static const char TRUE[];
 
-    //Continuous AF.
-    static const char KEY_CONTINUOUS_AF[];
-    static const char KEY_SUPPORTED_CONTINUOUS_AF[];
-
     // Values for white balance settings.
     static const char WHITE_BALANCE_AUTO[];
     static const char WHITE_BALANCE_INCANDESCENT[];
@@ -308,10 +244,6 @@ public:
     static const char EFFECT_WHITEBOARD[];
     static const char EFFECT_BLACKBOARD[];
     static const char EFFECT_AQUA[];
-
-    // Values for Touch AF/AEC
-    static const char TOUCH_AF_AEC_OFF[] ;
-    static const char TOUCH_AF_AEC_ON[] ;
 
     // Values for antibanding settings.
     static const char ANTIBANDING_AUTO[];
@@ -350,15 +282,9 @@ public:
     static const char SCENE_MODE_SPORTS[];
     static const char SCENE_MODE_PARTY[];
     static const char SCENE_MODE_CANDLELIGHT[];
-    static const char SCENE_MODE_BACKLIGHT[];
-    static const char SCENE_MODE_FLOWERS[];
     // Applications are looking for a barcode. Camera driver will be optimized
     // for barcode reading.
     static const char SCENE_MODE_BARCODE[];
-
-    // Values for auto scene detection settings.
-    static const char SCENE_DETECT_OFF[];
-    static const char SCENE_DETECT_ON[];
 
     // Formats for setPreviewFormat and setPictureFormat.
     static const char PIXEL_FORMAT_YUV422SP[];
@@ -366,7 +292,6 @@ public:
     static const char PIXEL_FORMAT_YUV422I[]; // YUY2
     static const char PIXEL_FORMAT_RGB565[];
     static const char PIXEL_FORMAT_JPEG[];
-    static const char PIXEL_FORMAT_RAW[];
 
     // Values for focus mode settings.
     // Auto-focus mode.
@@ -374,7 +299,6 @@ public:
     // Focus is set at infinity. Applications should not call
     // CameraHardwareInterface.autoFocus in this mode.
     static const char FOCUS_MODE_INFINITY[];
-    static const char FOCUS_MODE_NORMAL[];
     static const char FOCUS_MODE_MACRO[];
     // Focus is fixed. The camera is always in this mode if the focus is not
     // adjustable. If the camera has auto-focus, this mode can fix the
@@ -386,21 +310,6 @@ public:
     // CameraHardwareInterface.autoFocus in this mode.
     static const char FOCUS_MODE_EDOF[];
 
-    static const char ISO_AUTO[];
-    static const char ISO_HJR[] ;
-    static const char ISO_100[];
-    static const char ISO_200[] ;
-    static const char ISO_400[];
-    static const char ISO_800[];
-    static const char ISO_1600[];
-    // Values for Lens Shading
-    static const char LENSSHADE_ENABLE[] ;
-    static const char LENSSHADE_DISABLE[] ;
-
-    // Values for Continuous AF
-    static const char CONTINUOUS_AF_OFF[] ;
-    static const char CONTINUOUS_AF_ON[] ;
-
 private:
     DefaultKeyedVector<String8,String8>    mMap;
 };
@@ -408,4 +317,3 @@ private:
 }; // namespace android
 
 #endif
-
